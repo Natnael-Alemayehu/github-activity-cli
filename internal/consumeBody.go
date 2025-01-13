@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/natnael-alemayehu/github-activity-cli/internal/data"
 )
@@ -15,7 +14,12 @@ func ReadUsername() string {
 	username := os.Args[1]
 	return username
 }
-func ConsumeBody() error {
+
+// ConsumeBody returns the
+// 1. pushMessage as a []string
+// 2. typeCount as map[string]int
+// 3. activeRepos as map[string]int
+func ConsumeBody() ([]string, map[string]int, map[string]int, error) {
 	usr := ReadUsername()
 
 	url := fmt.Sprintf(`https://api.github.com/users/%v/events`, usr)
@@ -26,28 +30,24 @@ func ConsumeBody() error {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP method failed")
+		return nil, nil, nil, fmt.Errorf("HTTP method failed")
 	}
 
 	var items []data.Body
 
 	err = json.NewDecoder(res.Body).Decode(&items)
 	if err != nil {
-		return err
+		return nil, nil, nil, err
 	}
 
 	var pushMessages []string
 	typeCount := make(map[string]int)
 	activeRepos := make(map[string]int)
-	activeRepos2 := make(map[string]int)
 	// var starMessages []string
 
 	for _, item := range items {
 		typeCount[item.Type]++
-		activeRepos2[item.RepoField.Name]++
-		if strings.EqualFold(item.ActorField.Login, ReadUsername()) {
-			activeRepos[item.RepoField.Name]++
-		}
+		activeRepos[item.RepoField.Name]++
 
 		if len(item.PayloadField.Commits) > 0 {
 			commit := len(item.PayloadField.Commits)
@@ -59,23 +59,5 @@ func ConsumeBody() error {
 
 	}
 
-	// for _, i := range pushMessages {
-	// 	fmt.Printf("%v", i)
-	// }
-
-	// for key, val := range typeCount {
-	// 	fmt.Printf("%v - %v \n", key, val)
-	// }
-
-	fmt.Println("Before")
-	for key, val := range activeRepos {
-		fmt.Printf("%v - %v \n", key, val)
-	}
-
-	fmt.Println("After")
-	for key, val := range activeRepos2 {
-		fmt.Printf("%v - %v \n", key, val)
-	}
-
-	return nil
+	return pushMessages, typeCount, activeRepos, nil
 }
