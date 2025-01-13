@@ -3,11 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/natnael-alemayehu/github-activity-cli/internal"
 )
 
 func main() {
+	if os.Args[0] != "github-activity" {
+		fmt.Println("Usage: github-activity <username>")
+		os.Exit(1)
+	}
 	pushMessage, typeCount, activeRepos, err := internal.ConsumeBody()
 	if err != nil {
 		log.Fatal(err)
